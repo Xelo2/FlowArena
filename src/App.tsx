@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Eye, EyeOff, CheckCircle, AlertCircle, Home, LogIn, UserPlus, Github } from 'lucide-react';
+import { User, Eye, EyeOff, CheckCircle, AlertCircle, Home as HomeIcon, LogIn, UserPlus, Github } from 'lucide-react';
 
 // Google Icon Component (since it's not in Lucide)
 const GoogleIcon = ({ className }) => (
@@ -65,7 +65,7 @@ const Navigation = ({ navigate, currentPath, user, onSignOut }) => {
                 : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
             }`}
           >
-            <Home className="w-4 h-4 mr-2" />
+            <HomeIcon className="w-4 h-4 mr-2" />
             Home
           </button>
           
@@ -235,7 +235,7 @@ const Home = ({ user, navigate }) => {
           <div className="mt-8">
             <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700/50 p-8">
               <h3 className="text-xl font-bold text-white mb-6 flex items-center">
-                <Home className="w-5 h-5 mr-2 text-blue-400" />
+                <HomeIcon className="w-5 h-5 mr-2 text-blue-400" />
                 Recent Activity
               </h3>
               

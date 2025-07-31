@@ -328,8 +328,8 @@ const Home = ({ user, navigate }) => {
 };
 
 // Supabase Configuration and Client
-const supabaseUrl = 'https://your-project-ref.supabase.co';
-const supabaseAnonKey = 'your-anon-key';
+const supabaseUrl = 'https://ngsxqocwaujhorjjffjr.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5nc3hxb2N3YXVqaG9yampmZmpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4MzA5MTAsImV4cCI6MjA2OTQwNjkxMH0.QNkG9uOqIK67MUBEu_vwTTyjucVi5JLH4z4G8q7fKK0';
 
 // Simple Supabase client implementation
 const createSupabaseClient = (url, key) => {

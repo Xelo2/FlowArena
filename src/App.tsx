@@ -3,7 +3,7 @@ import { User, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react';
 
 // Demo Mode Configuration - This won't work in Claude artifacts due to CORS restrictions
 // For real authentication, run this code locally or deploy to a web server
-const DEMO_MODE = true; // Set to false when running locally
+const DEMO_MODE = false; // Set to false when running locally
 
 // Supabase configuration (for local use)
 const SUPABASE_URL = 'https://ngsxqocwaujhorjjffjr.supabase.co';

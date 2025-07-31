@@ -1,264 +1,1036 @@
-import React, { useState } from 'react';
-import { Code, Zap, Target, CheckCircle, Clock, AlertCircle, Sparkles, MessageCircle, Send, HelpCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { User, Eye, EyeOff, CheckCircle, AlertCircle, Home, LogIn, UserPlus, Github } from 'lucide-react';
 
-const N8nChallengeGenerator = () => {
-  const [currentStep, setCurrentStep] = useState('difficulty');
-  const [difficulty, setDifficulty] = useState('');
-  const [challenge, setChallenge] = useState('');
-  const [userWorkflow, setUserWorkflow] = useState('');
-  const [review, setReview] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [isReviewing, setIsReviewing] = useState(false);
-  const [chatMessages, setChatMessages] = useState([]);
-  const [chatInput, setChatInput] = useState('');
-  const [isChatLoading, setIsChatLoading] = useState(false);
+// Google Icon Component (since it's not in Lucide)
+const GoogleIcon = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+  </svg>
+);
 
-  const difficultyLevels = [
-    {
-      level: 'easy',
-      icon: <Target className="w-8 h-8" />,
-      title: 'Easy',
-      description: 'Perfect for beginners getting started with n8n',
-      color: 'from-emerald-400 to-green-500',
-      bgColor: 'from-emerald-500/10 to-green-500/20',
-      borderColor: 'border-emerald-500/30 hover:border-emerald-400/50',
-      textColor: 'text-emerald-400',
-      glowColor: 'shadow-emerald-500/25'
-    },
-    {
-      level: 'medium',
-      icon: <Zap className="w-8 h-8" />,
-      title: 'Medium',
-      description: 'Intermediate challenges for growing skills',
-      color: 'from-amber-400 to-orange-500',
-      bgColor: 'from-amber-500/10 to-orange-500/20',
-      borderColor: 'border-amber-500/30 hover:border-amber-400/50',
-      textColor: 'text-amber-400',
-      glowColor: 'shadow-amber-500/25'
-    },
-    {
-      level: 'hard',
-      icon: <Sparkles className="w-8 h-8" />,
-      title: 'Hard',
-      description: 'Advanced challenges for n8n masters',
-      color: 'from-purple-400 to-violet-500',
-      bgColor: 'from-purple-500/10 to-violet-500/20',
-      borderColor: 'border-purple-500/30 hover:border-purple-400/50',
-      textColor: 'text-purple-400',
-      glowColor: 'shadow-purple-500/25'
-    }
-  ];
+// Simple Router Component
+const Router = ({ children }) => {
+  const [currentPath, setCurrentPath] = useState(() => {
+    const path = window.location.pathname;
+    console.log('Initial path:', path);
+    return path || '/';
+  });
 
-  const generateChallenge = async () => {
-    setIsGenerating(true);
-    try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          messages: [
-            {
-              role: "user",
-              content: `Generate a creative and practical n8n workflow challenge for ${difficulty} difficulty level. 
+  useEffect(() => {
+    const handlePopState = () => {
+      const newPath = window.location.pathname || '/';
+      console.log('Path changed to:', newPath);
+      setCurrentPath(newPath);
+    };
 
-IMPORTANT: Consider n8n's built-in node capabilities when creating challenges:
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
-**EASY Level Guidelines:**
-- Use primarily built-in n8n nodes and popular integrations with direct nodes
-- Focus on basic workflow concepts: triggers, data transformation, simple conditions
-- Common built-in nodes: HTTP Request, Set, IF, Switch, Code, Schedule Trigger, Webhook
-- Well-supported apps: Google Sheets, Gmail, Slack, Discord, Notion, Airtable, Todoist
-- Avoid: Complex API integrations, custom authentication, social media posting APIs
-- Examples: Data processing, simple notifications, basic CRUD operations
+  const navigate = (path) => {
+    console.log('Navigating to:', path);
+    window.history.pushState({}, '', path);
+    setCurrentPath(path);
+  };
 
-**MEDIUM Level Guidelines:**
-- Can include some API integrations that require API key setup
-- More complex logic, loops, error handling
-- Social media APIs (Facebook, Twitter, Instagram), payment APIs, more advanced integrations
-- Multiple connected services with data transformation between them
+  return React.Children.map(children, child =>
+    React.cloneElement(child, { currentPath, navigate })
+  );
+};
 
-**HARD Level Guidelines:**
-- Complex API integrations, custom authentication flows
-- Advanced JavaScript in Code nodes, complex data manipulation
-- Multi-step workflows with sophisticated error handling and retry logic
-- Custom webhook handling, complex conditional branching
+// Navigation Component
+const Navigation = ({ navigate, currentPath, user, onSignOut }) => {
+  return (
+    <nav className="container mx-auto px-6 py-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center">
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl mr-4 shadow-2xl shadow-blue-500/25 relative">
+            <User className="w-6 h-6 text-white" />
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-purple-500 rounded-xl blur opacity-50 animate-pulse"></div>
+          </div>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent">
+            N8N Auth
+          </h1>
+        </div>
+        
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={() => navigate('/')}
+            className={`flex items-center px-4 py-2 rounded-lg transition-colors duration-200 ${
+              currentPath === '/' 
+                ? 'bg-blue-500/20 text-blue-300' 
+                : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+            }`}
+          >
+            <Home className="w-4 h-4 mr-2" />
+            Home
+          </button>
+          
+          {user ? (
+            <>
+              <div className="flex items-center px-4 py-2 text-slate-300">
+                <User className="w-4 h-4 mr-2" />
+                {user.email}
+              </div>
+              <button
+                onClick={onSignOut}
+                className="flex items-center px-4 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700/50 transition-colors duration-200"
+              >
+                <LogIn className="w-4 h-4 mr-2 rotate-180" />
+                Sign Out
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => navigate('/auth/signin')}
+                className={`flex items-center px-4 py-2 rounded-lg transition-colors duration-200 ${
+                  currentPath === '/auth/signin' 
+                    ? 'bg-blue-500/20 text-blue-300' 
+                    : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                }`}
+              >
+                <LogIn className="w-4 h-4 mr-2" />
+                Sign In
+              </button>
+              <button
+                onClick={() => navigate('/auth/signup')}
+                className={`flex items-center px-4 py-2 rounded-lg transition-colors duration-200 ${
+                  currentPath === '/auth/signup' 
+                    ? 'bg-blue-500/20 text-blue-300' 
+                    : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                }`}
+              >
+                <UserPlus className="w-4 h-4 mr-2" />
+                Sign Up
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </nav>
+  );
+};
 
-The challenge should:
-- Be realistic and applicable to real-world scenarios
-- Include clear objectives and requirements
-- Specify what nodes/integrations should be used
-- Include example data or scenarios to work with
-- Be appropriately scoped for ${difficulty} level complexity
+// Home Component
+const Home = ({ user, navigate }) => {
+  console.log('Home component rendering with user:', user);
+  
+  if (user) {
+    // Authenticated user view
+    return (
+      <div className="container mx-auto px-6 py-12">
+        <div className="max-w-6xl mx-auto">
+          {/* Welcome Header */}
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-6 shadow-2xl shadow-blue-500/25 relative">
+              <User className="w-10 h-10 text-white" />
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-purple-500 rounded-2xl blur opacity-50 animate-pulse"></div>
+            </div>
+            
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent mb-4">
+              Welcome back, {user.email?.split('@')[0]}!
+            </h1>
+            
+            <p className="text-lg text-slate-300 max-w-2xl mx-auto">
+              You're successfully authenticated. Here's your account overview and quick actions.
+            </p>
+          </div>
 
-Format your response as a well-structured challenge description that's engaging and clear. Don't include any JSON or code examples in the challenge description itself - just the requirements and scenario.`
+          {/* Dashboard Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            {/* Account Information Card */}
+            <div className="lg:col-span-2">
+              <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700/50 p-8">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-white flex items-center">
+                    <User className="w-6 h-6 mr-3 text-blue-400" />
+                    Account Information
+                  </h2>
+                  <div className="flex items-center px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+                    <CheckCircle className="w-4 h-4 text-emerald-400 mr-2" />
+                    <span className="text-emerald-400 text-sm font-medium">Active</span>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center py-3 border-b border-slate-700/50">
+                    <span className="text-slate-400 font-medium">Email Address</span>
+                    <span className="text-slate-200">{user.email}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-3 border-b border-slate-700/50">
+                    <span className="text-slate-400 font-medium">User ID</span>
+                    <span className="text-slate-200 font-mono text-sm bg-slate-700/50 px-2 py-1 rounded">
+                      {user.id}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-3 border-b border-slate-700/50">
+                    <span className="text-slate-400 font-medium">Account Type</span>
+                    <span className="text-blue-400 font-medium">Standard User</span>
+                  </div>
+                  <div className="flex justify-between items-center py-3">
+                    <span className="text-slate-400 font-medium">Last Sign In</span>
+                    <span className="text-slate-200">{new Date().toLocaleDateString()}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions Card */}
+            <div className="space-y-6">
+              <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700/50 p-6">
+                <h3 className="text-xl font-bold text-white mb-4 flex items-center">
+                  <CheckCircle className="w-5 h-5 mr-2 text-purple-400" />
+                  Quick Actions
+                </h3>
+                
+                <div className="space-y-3">
+                  <button className="w-full p-3 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50 rounded-xl text-slate-300 hover:text-white transition-all duration-200 text-left">
+                    <div className="font-medium">Update Profile</div>
+                    <div className="text-sm text-slate-400">Manage your account settings</div>
+                  </button>
+                  
+                  <button className="w-full p-3 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50 rounded-xl text-slate-300 hover:text-white transition-all duration-200 text-left">
+                    <div className="font-medium">Security Settings</div>
+                    <div className="text-sm text-slate-400">Change password & 2FA</div>
+                  </button>
+                  
+                  <button className="w-full p-3 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50 rounded-xl text-slate-300 hover:text-white transition-all duration-200 text-left">
+                    <div className="font-medium">API Keys</div>
+                    <div className="text-sm text-slate-400">Manage integration keys</div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Stats Card */}
+              <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700/50 p-6">
+                <h3 className="text-xl font-bold text-white mb-4 flex items-center">
+                  <AlertCircle className="w-5 h-5 mr-2 text-emerald-400" />
+                  Activity
+                </h3>
+                
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400">Sessions Today</span>
+                    <span className="text-emerald-400 font-bold">1</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400">Total Logins</span>
+                    <span className="text-blue-400 font-bold">24</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400">Account Age</span>
+                    <span className="text-purple-400 font-bold">7 days</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Recent Activity */}
+          <div className="mt-8">
+            <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700/50 p-8">
+              <h3 className="text-xl font-bold text-white mb-6 flex items-center">
+                <Home className="w-5 h-5 mr-2 text-blue-400" />
+                Recent Activity
+              </h3>
+              
+              <div className="space-y-4">
+                <div className="flex items-center justify-between py-3 border-b border-slate-700/50">
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 bg-green-500/10 rounded-full flex items-center justify-center mr-4">
+                      <CheckCircle className="w-5 h-5 text-green-400" />
+                    </div>
+                    <div>
+                      <div className="text-slate-200 font-medium">Successful sign in</div>
+                      <div className="text-slate-400 text-sm">Authentication completed</div>
+                    </div>
+                  </div>
+                  <span className="text-slate-400 text-sm">Just now</span>
+                </div>
+                
+                <div className="flex items-center justify-between py-3 border-b border-slate-700/50">
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 bg-blue-500/10 rounded-full flex items-center justify-center mr-4">
+                      <User className="w-5 h-5 text-blue-400" />
+                    </div>
+                    <div>
+                      <div className="text-slate-200 font-medium">Account accessed</div>
+                      <div className="text-slate-400 text-sm">Viewed dashboard</div>
+                    </div>
+                  </div>
+                  <span className="text-slate-400 text-sm">2 min ago</span>
+                </div>
+                
+                <div className="flex items-center justify-between py-3">
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 bg-purple-500/10 rounded-full flex items-center justify-center mr-4">
+                      <LogIn className="w-5 h-5 text-purple-400" />
+                    </div>
+                    <div>
+                      <div className="text-slate-200 font-medium">Profile updated</div>
+                      <div className="text-slate-400 text-sm">Settings synchronized</div>
+                    </div>
+                  </div>
+                  <span className="text-slate-400 text-sm">1 hour ago</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Non-authenticated user view (original design with background)
+  return (
+    <div className="container mx-auto px-6 py-12">
+      <div className="max-w-4xl mx-auto text-center">
+        <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl mb-8 shadow-2xl shadow-blue-500/25 relative">
+          <User className="w-12 h-12 text-white" />
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-purple-500 rounded-3xl blur opacity-50 animate-pulse"></div>
+        </div>
+        
+        <h1 className="text-5xl font-bold bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent mb-6">
+          Welcome to N8N Auth
+        </h1>
+        
+        <p className="text-xl text-slate-300 mb-8 max-w-2xl mx-auto">
+          A modern authentication system with Supabase integration. 
+          Sign up to create your account or sign in to access your dashboard.
+        </p>
+        
+        <div className="text-slate-400 mb-8">
+          <p>This is the home page. Please sign in or create an account to get started.</p>
+        </div>
+
+        <div className="flex justify-center space-x-4">
+          <button 
+            onClick={() => navigate('/auth/signin')}
+            className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+          >
+            Sign In
+          </button>
+          <button 
+            onClick={() => navigate('/auth/signup')}
+            className="px-8 py-3 border border-slate-600 text-slate-300 font-semibold rounded-xl hover:bg-slate-700/50 transition-all duration-300"
+          >
+            Sign Up
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Supabase Configuration and Client
+const supabaseUrl = 'https://your-project-ref.supabase.co';
+const supabaseAnonKey = 'your-anon-key';
+
+// Simple Supabase client implementation
+const createSupabaseClient = (url, key) => {
+  return {
+    auth: {
+      signUp: async ({ email, password }) => {
+        try {
+          // Simulate API call with mock data
+          console.log('Mock signup for:', email);
+          
+          // Mock successful response
+          return { 
+            data: { 
+              user: { id: 'mock-user-id', email }, 
+              session: null 
+            }, 
+            error: null 
+          };
+        } catch (error) {
+          return { data: null, error: { message: error.message } };
+        }
+      },
+
+      signInWithPassword: async ({ email, password }) => {
+        try {
+          // Simulate API call with mock data
+          console.log('Mock signin for:', email);
+          
+          // Mock successful response
+          const mockUser = { id: 'mock-user-id', email };
+          const mockSession = { user: mockUser, access_token: 'mock-token' };
+          
+          return { 
+            data: { session: mockSession }, 
+            error: null 
+          };
+        } catch (error) {
+          return { data: null, error: { message: error.message } };
+        }
+      },
+
+      signInWithOAuth: async ({ provider, options = {} }) => {
+        try {
+          const redirectTo = options.redirectTo || window.location.origin;
+          
+          // Store current path to redirect back after auth (optional)
+          localStorage.setItem('pre_auth_path', window.location.pathname);
+          
+          // Construct the OAuth URL with proper parameters
+          const params = new URLSearchParams({
+            provider: provider,
+            redirect_to: redirectTo
+          });
+          
+          const oauthUrl = `${url}/auth/v1/authorize?${params.toString()}`;
+          
+          console.log('Redirecting to OAuth URL:', oauthUrl);
+          
+          // Redirect to OAuth provider
+          window.location.href = oauthUrl;
+          
+          return { data: null, error: null };
+        } catch (error) {
+          console.error('OAuth error:', error);
+          return { data: null, error: { message: error.message } };
+        }
+      },
+
+      resetPasswordForEmail: async ({ email }) => {
+        try {
+          console.log('Mock password reset for:', email);
+          
+          // Mock successful response
+          return { 
+            data: {}, 
+            error: null 
+          };
+        } catch (error) {
+          return { data: null, error: { message: error.message } };
+        }
+      },
+
+      getSession: async () => {
+        // First check for OAuth callback parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const accessToken = urlParams.get('access_token');
+        const refreshToken = urlParams.get('refresh_token');
+        const errorCode = urlParams.get('error');
+        const errorDescription = urlParams.get('error_description');
+        
+        // Handle OAuth errors
+        if (errorCode) {
+          console.error('OAuth error:', errorCode, errorDescription);
+          // Clean up URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+          return { data: { session: null }, error: { message: errorDescription || 'Authentication failed' } };
+        }
+        
+        if (accessToken) {
+          try {
+            // Get user data with the access token
+            const response = await fetch(`${url}/auth/v1/user`, {
+              headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'apikey': key
+              }
+            });
+            
+            if (response.ok) {
+              const user = await response.json();
+              
+              // Store tokens
+              localStorage.setItem('supabase_token', accessToken);
+              if (refreshToken) {
+                localStorage.setItem('supabase_refresh_token', refreshToken);
+              }
+              
+              // Clean up URL parameters
+              window.history.replaceState({}, document.title, window.location.pathname);
+              
+              return { 
+                data: { 
+                  session: { user, access_token: accessToken },
+                  isOAuthCallback: true
+                }, 
+                error: null 
+              };
+            } else {
+              console.error('Failed to get user data after OAuth');
+              // Clean up URL
+              window.history.replaceState({}, document.title, window.location.pathname);
+              return { data: { session: null }, error: { message: 'Failed to authenticate user' } };
             }
-          ]
-        })
-      });
-
-      const data = await response.json();
-      setChallenge(data.content[0].text);
-      setChatMessages([]); // Reset chat when new challenge is generated
-      setCurrentStep('challenge');
-    } catch (error) {
-      console.error('Error generating challenge:', error);
-      setChallenge('Sorry, there was an error generating the challenge. Please try again.');
-      setCurrentStep('challenge');
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const reviewWorkflow = async () => {
-    if (!userWorkflow.trim()) return;
-    
-    setIsReviewing(true);
-    try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1500,
-          messages: [
-            {
-              role: "user",
-              content: `Please review this n8n workflow JSON for the ${difficulty} level challenge:
-
-CHALLENGE:
-${challenge}
-
-WORKFLOW JSON:
-${userWorkflow}
-
-Please provide a comprehensive code review covering:
-1. **Correctness**: Does it solve the challenge requirements?
-2. **Best Practices**: Are n8n best practices followed?
-3. **Error Handling**: Is proper error handling implemented?
-4. **Efficiency**: Could the workflow be optimized?
-5. **Maintainability**: Is the workflow well-structured and maintainable?
-
-Provide specific feedback with examples and suggestions for improvement. Be constructive and educational.`
+          } catch (error) {
+            console.error('Error processing OAuth callback:', error);
+            // Clean up URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+            return { data: { session: null }, error: { message: 'Authentication error' } };
+          }
+        }
+        
+        // Check for existing token in localStorage
+        const token = localStorage.getItem('supabase_token');
+        if (!token) return { data: { session: null }, error: null };
+        
+        try {
+          const response = await fetch(`${url}/auth/v1/user`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'apikey': key
             }
-          ]
-        })
-      });
+          });
+          
+          if (response.ok) {
+            const user = await response.json();
+            return { 
+              data: { 
+                session: { user, access_token: token } 
+              }, 
+              error: null 
+            };
+          } else {
+            // Token might be expired, remove it
+            localStorage.removeItem('supabase_token');
+            localStorage.removeItem('supabase_refresh_token');
+            return { data: { session: null }, error: null };
+          }
+        } catch (error) {
+          console.error('Error validating existing session:', error);
+          return { data: { session: null }, error };
+        }
+      },
 
-      const data = await response.json();
-      setReview(data.content[0].text);
-      setCurrentStep('review');
-    } catch (error) {
-      console.error('Error reviewing workflow:', error);
-      setReview('Sorry, there was an error reviewing your workflow. Please try again.');
-      setCurrentStep('review');
-    } finally {
-      setIsReviewing(false);
+      signOut: async () => {
+        const token = localStorage.getItem('supabase_token');
+        
+        // Call Supabase logout endpoint if we have a token
+        if (token) {
+          try {
+            await fetch(`${url}/auth/v1/logout`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'apikey': key
+              }
+            });
+          } catch (error) {
+            console.error('Error during logout:', error);
+          }
+        }
+        
+        // Clear all auth-related localStorage items
+        localStorage.removeItem('supabase_token');
+        localStorage.removeItem('supabase_refresh_token');
+        localStorage.removeItem('pre_auth_path');
+        
+        return { error: null };
+      }
     }
   };
+};
 
-  const sendChatMessage = async () => {
-    if (!chatInput.trim()) return;
+const supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey);
+
+// Supabase Auth Hook
+const useSupabaseAuth = () => {
+  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState(null);
+  const [oauthLoading, setOauthLoading] = useState(false);
+
+  // Check for existing session on mount
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Session check error:', error);
+          // You might want to show this error to the user
+          return;
+        }
+        
+        if (data.session) {
+          setUser(data.session.user);
+          
+          // If this was an OAuth callback, optionally redirect to stored path
+          if (data.isOAuthCallback) {
+            const preAuthPath = localStorage.getItem('pre_auth_path');
+            if (preAuthPath && preAuthPath !== '/' && preAuthPath !== window.location.pathname) {
+              localStorage.removeItem('pre_auth_path');
+              window.history.replaceState({}, document.title, preAuthPath);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error checking session:', error);
+      }
+    };
     
-    const userMessage = { role: 'user', content: chatInput };
-    setChatMessages(prev => [...prev, userMessage]);
-    setChatInput('');
-    setIsChatLoading(true);
+    checkSession();
+  }, []);
 
+  const signUp = async (email, password) => {
+    setLoading(true);
     try {
-      const conversationHistory = [
-        {
-          role: 'system',
-          content: `You are an expert n8n automation specialist helping users with their workflow challenges. 
-
-CONTEXT:
-- Current challenge difficulty: ${difficulty}
-- Current challenge: ${challenge}
-
-IMPORTANT n8n KNOWLEDGE:
-**Built-in Core Nodes:**
-- Triggers: Schedule, Webhook, Manual, Email IMAP, HTTP Request
-- Logic: IF, Switch, Merge, Split In Batches, Wait, Set, Code (JavaScript/Python)
-- Data: Item Lists, Sort, Limit, Summarize, Aggregate, Filter
-- Files: Read/Write Binary File, Move Binary Data
-
-**Popular App Integrations (with dedicated nodes):**
-- Google: Sheets, Drive, Gmail, Calendar, Docs, Forms
-- Microsoft: Excel, Outlook, OneDrive, Teams, SharePoint
-- Communication: Slack, Discord, Telegram, WhatsApp Business
-- Productivity: Notion, Airtable, Todoist, Trello, Asana, ClickUp
-- E-commerce: Shopify, WooCommerce, Stripe, PayPal
-- CRM: HubSpot, Pipedrive, Salesforce
-- Social: LinkedIn, Twitter API v2 (limited), YouTube
-- Development: GitHub, GitLab, Jira
-- Marketing: Mailchimp, SendGrid, ActiveCampaign
-
-**HTTP Request Node:** Can connect to any REST API when no dedicated node exists
-**Webhook Node:** Receives HTTP requests, great for triggers
-**Code Node:** JavaScript/Python for custom logic and data manipulation
-**Set Node:** Transforms and structures data
-**IF/Switch Nodes:** Conditional logic and routing
-
-**Common Patterns:**
-- Trigger → Process → Action workflows
-- Data sync between different platforms
-- Automated notifications and alerts
-- Content generation and distribution
-- Data processing and transformation
-
-Provide helpful, specific advice about n8n workflows, nodes to use, and implementation strategies. Be encouraging and educational.`
-        },
-        ...chatMessages,
-        userMessage
-      ];
-
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 800,
-          messages: conversationHistory
-        })
-      });
-
-      const data = await response.json();
-      const assistantMessage = { role: 'assistant', content: data.content[0].text };
-      setChatMessages(prev => [...prev, assistantMessage]);
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      
+      if (error) {
+        console.error('Sign up error:', error);
+        return { 
+          success: false, 
+          message: error.message || 'Sign up failed. Please try again.' 
+        };
+      }
+      
+      console.log('Sign up successful:', data);
+      return { 
+        success: true, 
+        message: 'Account created successfully! You can now sign in.' 
+      };
     } catch (error) {
-      console.error('Error in chat:', error);
-      const errorMessage = { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' };
-      setChatMessages(prev => [...prev, errorMessage]);
+      console.error('Sign up error:', error);
+      return { success: false, message: 'An unexpected error occurred. Please try again.' };
     } finally {
-      setIsChatLoading(false);
+      setLoading(false);
     }
   };
 
-  const resetChallenge = () => {
-    setCurrentStep('difficulty');
-    setDifficulty('');
-    setChallenge('');
-    setUserWorkflow('');
-    setReview('');
-    setChatMessages([]);
-    setChatInput('');
+  const signIn = async (email, password) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      
+      if (error) {
+        console.error('Sign in error:', error);
+        return { 
+          success: false, 
+          message: error.message || 'Sign in failed. Please check your credentials.' 
+        };
+      }
+      
+      if (data.session) {
+        setUser(data.session.user);
+        localStorage.setItem('supabase_token', data.session.access_token);
+      }
+      
+      console.log('Sign in successful:', data);
+      return { success: true, message: 'Signed in successfully!' };
+    } catch (error) {
+      console.error('Sign in error:', error);
+      return { success: false, message: 'An unexpected error occurred. Please try again.' };
+    } finally {
+      setLoading(false);
+    }
   };
 
+  const signInWithOAuth = async (provider) => {
+    setOauthLoading(true);
+    try {
+      console.log(`Starting ${provider} OAuth...`);
+      
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+      
+      if (error) {
+        console.error(`${provider} OAuth error:`, error);
+        setOauthLoading(false);
+        return { 
+          success: false, 
+          message: `${provider} sign in failed. Please try again.` 
+        };
+      }
+      
+      // The function will redirect, so we don't need to set loading to false
+      // or return success message as the page will redirect
+      return { success: true, message: `Redirecting to ${provider}...` };
+    } catch (error) {
+      console.error(`${provider} OAuth error:`, error);
+      setOauthLoading(false);
+      return { success: false, message: 'An unexpected error occurred. Please try again.' };
+    }
+  };
+
+  const signOut = async () => {
+    setLoading(true);
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      return { success: true, message: 'Signed out successfully!' };
+    } catch (error) {
+      console.error('Sign out error:', error);
+      return { success: false, message: 'Sign out failed. Please try again.' };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetPassword = async (email) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.resetPasswordForEmail({ email });
+      
+      if (error) {
+        console.error('Password reset error:', error);
+        return { 
+          success: false, 
+          message: error.message || 'Password reset failed. Please try again.' 
+        };
+      }
+      
+      console.log('Password reset successful:', data);
+      return { 
+        success: true, 
+        message: 'Password reset email sent! Please check your inbox.' 
+      };
+    } catch (error) {
+      console.error('Password reset error:', error);
+      return { success: false, message: 'An unexpected error occurred. Please try again.' };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { user, loading, oauthLoading, signUp, signIn, signInWithOAuth, signOut, resetPassword };
+};
+
+// Auth Form Component
+const AuthForm = ({ mode, navigate }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState('');
+  const [showResetPassword, setShowResetPassword] = useState(false);
+
+  const { loading, oauthLoading, signUp, signIn, signInWithOAuth, resetPassword } = useSupabaseAuth();
+
+  const handleSubmit = async () => {
+    setMessage('');
+    
+    if (mode === 'signup' && password !== confirmPassword) {
+      setMessage('Passwords do not match. Please try again.');
+      setMessageType('error');
+      return;
+    }
+
+    if (!email || !password) {
+      setMessage('Please fill in all fields.');
+      setMessageType('error');
+      return;
+    }
+
+    const result = mode === 'signup' 
+      ? await signUp(email, password)
+      : await signIn(email, password);
+
+    if (result.success) {
+      setMessage(result.message);
+      setMessageType('success');
+      // Navigate to home after successful auth
+      setTimeout(() => navigate('/'), 2000);
+    } else {
+      setMessage(result.message);
+      setMessageType('error');
+    }
+  };
+
+  const handleResetPassword = async () => {
+    setMessage('');
+    
+    if (!email) {
+      setMessage('Please enter your email address first.');
+      setMessageType('error');
+      return;
+    }
+
+    const result = await resetPassword(email);
+    
+    if (result.success) {
+      setMessage(result.message);
+      setMessageType('success');
+      setShowResetPassword(false);
+    } else {
+      setMessage(result.message);
+      setMessageType('error');
+    }
+  };
+
+  const handleOAuthSignIn = async (provider) => {
+    setMessage('');
+    const result = await signInWithOAuth(provider);
+    
+    if (!result.success) {
+      setMessage(result.message);
+      setMessageType('error');
+    } else {
+      setMessage(result.message);
+      setMessageType('success');
+      // Navigate to home after OAuth success
+      setTimeout(() => navigate('/'), 2500);
+    }
+  };
+
+  return (
+    <div className="container mx-auto px-6 py-12">
+      <div className="max-w-md mx-auto">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-6 shadow-2xl shadow-blue-500/25 relative">
+            <User className="w-10 h-10 text-white" />
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-purple-500 rounded-2xl blur opacity-50 animate-pulse"></div>
+          </div>
+          <h2 className="text-3xl font-bold text-white mb-2">
+            {mode === 'signin' ? 'Welcome Back' : 'Get Started'}
+          </h2>
+          <p className="text-slate-300">
+            {mode === 'signin' ? 'Sign in to continue your journey' : 'Create an account to save your progress'}
+          </p>
+        </div>
+
+        <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700/50 p-8">
+          {message && (
+            <div className={`mb-6 p-4 rounded-xl flex items-center ${
+              messageType === 'success' 
+                ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
+                : 'bg-red-500/10 border border-red-500/20 text-red-400'
+            }`}>
+              {messageType === 'success' ? (
+                <CheckCircle className="w-5 h-5 mr-2" />
+              ) : (
+                <AlertCircle className="w-5 h-5 mr-2" />
+              )}
+              {message}
+            </div>
+          )}
+
+          {/* OAuth Buttons */}
+          <div className="mb-6">
+            <div className="grid grid-cols-1 gap-3">
+              <button
+                onClick={() => handleOAuthSignIn('google')}
+                disabled={loading || oauthLoading}
+                className="w-full flex items-center justify-center py-3 px-4 border border-slate-600/50 rounded-xl bg-slate-700/50 text-slate-300 hover:bg-slate-600/50 hover:border-slate-500/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {oauthLoading ? (
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-slate-300 border-t-transparent mr-3"></div>
+                ) : (
+                  <GoogleIcon className="w-5 h-5 mr-3" />
+                )}
+                Continue with Google
+              </button>
+              
+              <button
+                onClick={() => handleOAuthSignIn('github')}
+                disabled={loading || oauthLoading}
+                className="w-full flex items-center justify-center py-3 px-4 border border-slate-600/50 rounded-xl bg-slate-700/50 text-slate-300 hover:bg-slate-600/50 hover:border-slate-500/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {oauthLoading ? (
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-slate-300 border-t-transparent mr-3"></div>
+                ) : (
+                  <Github className="w-5 h-5 mr-3" />
+                )}
+                Continue with GitHub
+              </button>
+            </div>
+
+            <div className="mt-6">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-slate-600/50"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-slate-800/50 text-slate-400">Or continue with email</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Email
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full p-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200"
+                placeholder="Enter your email"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full p-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 pr-12"
+                  placeholder="Enter your password"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-200"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              {mode === 'signin' && (
+                <div className="flex justify-end mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowResetPassword(true)}
+                    className="text-sm text-blue-400 hover:text-blue-300 transition-colors duration-200"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {mode === 'signup' && (
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Confirm Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className={`w-full p-3 bg-slate-900/50 border rounded-xl text-slate-200 placeholder-slate-500 focus:ring-2 transition-all duration-200 ${
+                      confirmPassword && password !== confirmPassword
+                        ? 'border-red-500/50 focus:ring-red-500/50 focus:border-red-500/50'
+                        : confirmPassword && password === confirmPassword
+                        ? 'border-emerald-500/50 focus:ring-emerald-500/50 focus:border-emerald-500/50'
+                        : 'border-slate-600/50 focus:ring-blue-500/50 focus:border-blue-500/50'
+                    }`}
+                    placeholder="Confirm your password"
+                    required
+                  />
+                  {confirmPassword && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      {password === confirmPassword ? (
+                        <CheckCircle className="w-5 h-5 text-emerald-400" />
+                      ) : (
+                        <AlertCircle className="w-5 h-5 text-red-400" />
+                      )}
+                    </div>
+                  )}
+                </div>
+                {confirmPassword && password !== confirmPassword && (
+                  <p className="mt-2 text-sm text-red-400 flex items-center">
+                    <AlertCircle className="w-4 h-4 mr-1" />
+                    Passwords do not match
+                  </p>
+                )}
+                {confirmPassword && password === confirmPassword && (
+                  <p className="mt-2 text-sm text-emerald-400 flex items-center">
+                    <CheckCircle className="w-4 h-4 mr-1" />
+                    Passwords match
+                  </p>
+                )}
+              </div>
+            )}
+
+            <button
+              onClick={handleSubmit}
+              disabled={loading || oauthLoading || (mode === 'signup' && password !== confirmPassword)}
+              className="w-full py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            >
+              {loading ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-3"></div>
+                  {mode === 'signin' ? 'Signing In...' : 'Creating Account...'}
+                </div>
+              ) : (
+                mode === 'signin' ? 'Sign In' : 'Create Account'
+              )}
+            </button>
+          </div>
+
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => navigate(mode === 'signin' ? '/auth/signup' : '/auth/signin')}
+              className="text-sm text-blue-400 hover:text-blue-300 transition-colors duration-200"
+            >
+              {mode === 'signin' ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+            </button>
+          </div>
+
+          {/* Password Reset Modal */}
+          {showResetPassword && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+              <div className="bg-slate-800 rounded-2xl p-6 max-w-sm w-full mx-4 border border-slate-700">
+                <h3 className="text-xl font-bold text-white mb-4">Reset Password</h3>
+                <p className="text-slate-300 text-sm mb-4">
+                  Enter your email address and we'll send you a link to reset your password.
+                </p>
+                
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full p-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200"
+                    placeholder="Enter your email"
+                  />
+                </div>
+
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => setShowResetPassword(false)}
+                    className="flex-1 py-2 px-4 border border-slate-600 text-slate-300 rounded-lg hover:bg-slate-700/50 transition-colors duration-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleResetPassword}
+                    disabled={loading}
+                    className="flex-1 py-2 px-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? (
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                      </div>
+                    ) : (
+                      'Send Reset Link'
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Main App Component
+const App = () => {
   return (
     <div className="min-h-screen bg-slate-900 relative overflow-hidden">
       {/* Animated Background */}
       <div className="absolute inset-0">
-        {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"></div>
         
-        {/* Animated particles */}
         <div className="absolute inset-0">
           {[...Array(20)].map((_, i) => (
             <div
@@ -277,305 +1049,14 @@ Provide helpful, specific advice about n8n workflows, nodes to use, and implemen
           ))}
         </div>
 
-        {/* Grid pattern */}
-        <div className="absolute inset-0 opacity-5" style={{
-          backgroundImage: `
-            linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
-          `,
-          backgroundSize: '50px 50px'
-        }}></div>
-
-        {/* Glowing orbs */}
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute top-3/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
-        <div className="absolute top-1/2 left-3/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '4s' }}></div>
       </div>
 
-      <div className="relative z-10 container mx-auto px-6 py-12">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-6 shadow-2xl shadow-blue-500/25 relative">
-            <Code className="w-10 h-10 text-white" />
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-purple-500 rounded-2xl blur opacity-50 animate-pulse"></div>
-          </div>
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent mb-4">
-            n8n Challenge Generator
-          </h1>
-          <p className="text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
-            Master your automation skills with AI-generated challenges and expert code reviews
-          </p>
-        </div>
-
-        {/* Progress Steps */}
-        <div className="flex justify-center mb-12">
-          <div className="flex items-center space-x-4">
-            {['difficulty', 'challenge', 'review'].map((step, index) => (
-              <React.Fragment key={step}>
-                <div className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-300 ${
-                  currentStep === step 
-                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 border-blue-400 text-white shadow-lg shadow-blue-500/25' 
-                    : index < ['difficulty', 'challenge', 'review'].indexOf(currentStep)
-                    ? 'bg-gradient-to-r from-emerald-500 to-green-600 border-emerald-400 text-white shadow-lg shadow-emerald-500/25'
-                    : 'bg-slate-800/50 border-slate-600 text-slate-400 backdrop-blur-sm'
-                }`}>
-                  {index < ['difficulty', 'challenge', 'review'].indexOf(currentStep) ? (
-                    <CheckCircle className="w-6 h-6" />
-                  ) : (
-                    <span className="font-semibold">{index + 1}</span>
-                  )}
-                </div>
-                {index < 2 && (
-                  <div className={`w-16 h-0.5 transition-all duration-300 ${
-                    index < ['difficulty', 'challenge', 'review'].indexOf(currentStep)
-                      ? 'bg-gradient-to-r from-emerald-500 to-green-500'
-                      : 'bg-slate-600'
-                  }`} />
-                )}
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
-
-        {/* Step 1: Difficulty Selection */}
-        {currentStep === 'difficulty' && (
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-white mb-4">Choose Your Challenge Level</h2>
-              <p className="text-slate-300 text-lg">Select the difficulty that matches your n8n expertise</p>
-            </div>
-            <div className="grid md:grid-cols-3 gap-6 mb-8">
-              {difficultyLevels.map((level) => (
-                <button
-                  key={level.level}
-                  onClick={() => setDifficulty(level.level)}
-                  className={`group relative p-8 rounded-2xl border-2 transition-all duration-300 transform hover:scale-105 backdrop-blur-sm ${
-                    difficulty === level.level 
-                      ? `${level.borderColor.replace('hover:', '')} shadow-2xl ${level.glowColor} scale-105` 
-                      : level.borderColor
-                  } bg-gradient-to-br ${level.bgColor} hover:shadow-xl`}
-                >
-                  <div className={`inline-flex items-center justify-center w-16 h-16 rounded-xl bg-gradient-to-br ${level.color} text-white mb-4 shadow-lg relative`}>
-                    {level.icon}
-                    {difficulty === level.level && (
-                      <div className={`absolute inset-0 bg-gradient-to-br ${level.color} rounded-xl blur opacity-50 animate-pulse`}></div>
-                    )}
-                  </div>
-                  <h3 className={`text-2xl font-bold mb-2 ${level.textColor}`}>{level.title}</h3>
-                  <p className="text-slate-300 leading-relaxed">{level.description}</p>
-                  {difficulty === level.level && (
-                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 pointer-events-none"></div>
-                  )}
-                </button>
-              ))}
-            </div>
-            <div className="text-center">
-              <button
-                onClick={generateChallenge}
-                disabled={!difficulty || isGenerating}
-                className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl shadow-2xl shadow-blue-500/25 hover:shadow-blue-500/40 transform hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none relative overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 opacity-0 hover:opacity-20 transition-opacity duration-300"></div>
-                {isGenerating ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-3"></div>
-                    Generating Challenge...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-5 h-5 mr-3" />
-                    Generate Challenge
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Step 2: Challenge Display */}
-        {currentStep === 'challenge' && (
-          <div className="max-w-7xl mx-auto">
-            <div className="grid lg:grid-cols-3 gap-8">
-              {/* Challenge Content */}
-              <div className="lg:col-span-2">
-                <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700/50 p-8 mb-8">
-                  <div className="flex items-center mb-6">
-                    <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br ${
-                      difficultyLevels.find(d => d.level === difficulty)?.color
-                    } text-white mr-4 shadow-lg relative`}>
-                      {difficultyLevels.find(d => d.level === difficulty)?.icon}
-                      <div className={`absolute inset-0 bg-gradient-to-br ${
-                        difficultyLevels.find(d => d.level === difficulty)?.color
-                      } rounded-xl blur opacity-50 animate-pulse`}></div>
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-bold text-white">Your Challenge</h2>
-                      <p className="text-slate-300 capitalize">{difficulty} Difficulty</p>
-                    </div>
-                  </div>
-                  <div className="prose prose-slate max-w-none">
-                    <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-600/50 backdrop-blur-sm">
-                      {challenge.split('\n').map((paragraph, index) => (
-                        paragraph.trim() && (
-                          <p key={index} className="mb-4 last:mb-0 text-slate-200 leading-relaxed">
-                            {paragraph}
-                          </p>
-                        )
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700/50 p-8">
-                  <h3 className="text-xl font-bold text-white mb-4 flex items-center">
-                    <Code className="w-6 h-6 mr-3 text-blue-400" />
-                    Submit Your Solution
-                  </h3>
-                  <p className="text-slate-300 mb-6">Paste your n8n workflow JSON below for AI-powered code review</p>
-                  <textarea
-                    value={userWorkflow}
-                    onChange={(e) => setUserWorkflow(e.target.value)}
-                    placeholder="Paste your n8n workflow JSON here..."
-                    className="w-full h-64 p-4 bg-slate-900/50 border border-slate-600/50 rounded-xl font-mono text-sm resize-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 text-slate-200 placeholder-slate-500 backdrop-blur-sm"
-                  />
-                  <div className="flex justify-between items-center mt-6">
-                    <button
-                      onClick={resetChallenge}
-                      className="px-6 py-3 text-slate-400 hover:text-white font-medium transition-colors duration-200"
-                    >
-                      ← New Challenge
-                    </button>
-                    <button
-                      onClick={reviewWorkflow}
-                      disabled={!userWorkflow.trim() || isReviewing}
-                      className="inline-flex items-center px-8 py-3 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transform hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none relative overflow-hidden"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-green-500 opacity-0 hover:opacity-20 transition-opacity duration-300"></div>
-                      {isReviewing ? (
-                        <>
-                          <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-3"></div>
-                          Reviewing Code...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="w-5 h-5 mr-3" />
-                          Get Code Review
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Help Chat */}
-              <div className="lg:col-span-1">
-                <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700/50 p-6 h-[600px] flex flex-col">
-                  <div className="flex items-center mb-6">
-                    <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white mr-3 shadow-lg relative">
-                      <HelpCircle className="w-5 h-5" />
-                      <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-xl blur opacity-50 animate-pulse"></div>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-white">Need Help?</h3>
-                      <p className="text-sm text-slate-300">Ask me anything about n8n!</p>
-                    </div>
-                  </div>
-
-                  {/* Chat Messages */}
-                  <div className="flex-1 overflow-y-auto mb-4 space-y-4">
-                    {chatMessages.length === 0 && (
-                      <div className="text-center py-8">
-                        <MessageCircle className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                        <p className="text-slate-400 text-sm">Ask me for help with nodes, integrations, or workflow strategies!</p>
-                      </div>
-                    )}
-                    {chatMessages.map((message, index) => (
-                      <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[85%] p-3 rounded-xl ${
-                          message.role === 'user' 
-                            ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg' 
-                            : 'bg-slate-700/50 text-slate-200 border border-slate-600/50 backdrop-blur-sm'
-                        }`}>
-                          <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                        </div>
-                      </div>
-                    ))}
-                    {isChatLoading && (
-                      <div className="flex justify-start">
-                        <div className="bg-slate-700/50 border border-slate-600/50 backdrop-blur-sm p-3 rounded-xl">
-                          <div className="flex items-center space-x-2">
-                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-slate-400 border-t-transparent"></div>
-                            <span className="text-sm text-slate-300">Thinking...</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Chat Input */}
-                  <div className="flex space-x-2">
-                    <input
-                      type="text"
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && !isChatLoading && sendChatMessage()}
-                      placeholder="Ask about n8n nodes, workflows..."
-                      className="flex-1 p-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 text-slate-200 placeholder-slate-500 backdrop-blur-sm"
-                      disabled={isChatLoading}
-                    />
-                    <button
-                      onClick={sendChatMessage}
-                      disabled={!chatInput.trim() || isChatLoading}
-                      className="p-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-400 hover:to-purple-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                    >
-                      <Send className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Step 3: Code Review */}
-        {currentStep === 'review' && (
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700/50 p-8 mb-8">
-              <div className="flex items-center mb-6">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 text-white mr-4 shadow-lg relative">
-                  <CheckCircle className="w-6 h-6" />
-                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-400 to-green-500 rounded-xl blur opacity-50 animate-pulse"></div>
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-white">Code Review Complete</h2>
-                  <p className="text-slate-300">AI-powered analysis of your workflow</p>
-                </div>
-              </div>
-              <div className="prose prose-slate max-w-none">
-                <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-600/50 backdrop-blur-sm">
-                  {review.split('\n').map((paragraph, index) => (
-                    paragraph.trim() && (
-                      <p key={index} className="mb-4 last:mb-0 text-slate-200 leading-relaxed">
-                        {paragraph}
-                      </p>
-                    )
-                  ))}
-                </div>
-              </div>
-            </div>
-            
-            <div className="text-center">
-              <button
-                onClick={resetChallenge}
-                className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl shadow-2xl shadow-blue-500/25 hover:shadow-blue-500/40 transform hover:scale-105 transition-all duration-300 relative overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 opacity-0 hover:opacity-20 transition-opacity duration-300"></div>
-                <Sparkles className="w-5 h-5 mr-3" />
-                Try Another Challenge
-              </button>
-            </div>
-          </div>
-        )}
+      <div className="relative z-10">
+        <Router>
+          <AppContent />
+        </Router>
       </div>
 
       <style jsx>{`
@@ -589,4 +1070,67 @@ Provide helpful, specific advice about n8n workflows, nodes to use, and implemen
   );
 };
 
-export default N8nChallengeGenerator;
+// App Content with Routing Logic
+const AppContent = ({ currentPath, navigate }) => {
+  const { user, signOut } = useSupabaseAuth();
+
+  const handleSignOut = async () => {
+    const result = await signOut();
+    if (result.success) {
+      navigate('/');
+    }
+  };
+
+  // Debug: Log current path and user state
+  console.log('Current path:', currentPath, 'User:', user);
+
+  return (
+    <>
+      <Navigation 
+        navigate={navigate} 
+        currentPath={currentPath} 
+        user={user}
+        onSignOut={handleSignOut}
+      />
+      
+      {/* Always show Home component for root path */}
+      {currentPath === '/' && <Home user={user} navigate={navigate} />}
+      
+      {/* Show auth forms only for unauthenticated users */}
+      {currentPath === '/auth/signin' && !user && <AuthForm mode="signin" navigate={navigate} />}
+      {currentPath === '/auth/signup' && !user && <AuthForm mode="signup" navigate={navigate} />}
+      
+      {/* Redirect authenticated users away from auth pages */}
+      {user && (currentPath === '/auth/signin' || currentPath === '/auth/signup') && (
+        <div className="container mx-auto px-6 py-12 text-center">
+          <h2 className="text-2xl font-bold text-white mb-4">Already Signed In</h2>
+          <p className="text-slate-300 mb-6">You're already authenticated. Redirecting to home...</p>
+          <button
+            onClick={() => navigate('/')}
+            className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300"
+          >
+            Go Home
+          </button>
+        </div>
+      )}
+      
+      {/* 404 fallback */}
+      {!['/', '/auth/signin', '/auth/signup'].includes(currentPath) && (
+        <div className="container mx-auto px-6 py-12 text-center">
+          <h2 className="text-2xl font-bold text-white mb-4">Page Not Found</h2>
+          <p className="text-slate-300 mb-6">The page you're looking for doesn't exist.</p>
+          <button
+            onClick={() => navigate('/')}
+            className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300"
+          >
+            Go Home
+          </button>
+        </div>
+      )}
+      
+
+    </>
+  );
+};
+
+export default App;

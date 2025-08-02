@@ -1136,6 +1136,7 @@ const AppContent = ({ currentPath, navigate }) => {
         <div className="container mx-auto px-6 py-12 text-center">
           <h2 className="text-2xl font-bold text-white mb-4">Already Signed In</h2>
           <p className="text-slate-300 mb-6">You're already authenticated. Redirecting to home...</p>
+          {setTimeout(() => navigate('/'), 2000)}
           <button
             onClick={() => navigate('/')}
             className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300"

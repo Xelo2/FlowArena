@@ -1038,6 +1038,8 @@ const AuthForm = ({ mode, navigate }) => {
 
 // Main App Component
 const App = () => {
+  const { user, signOut } = useSupabaseAuth();
+
   return (
     <div className="min-h-screen bg-slate-900 relative overflow-hidden">
       {/* Animated Background */}
@@ -1068,7 +1070,7 @@ const App = () => {
 
       <div className="relative z-10">
         <Router>
-          <AppContent />
+          <AppContent user={user} signOut={signOut} />
         </Router>
       </div>
 
@@ -1084,8 +1086,7 @@ const App = () => {
 };
 
 // App Content with Routing Logic
-const AppContent = ({ currentPath, navigate }) => {
-  const { user, signOut } = useSupabaseAuth();
+const AppContent = ({ currentPath, navigate, user, signOut }) => {
 
   const handleSignOut = async () => {
     const result = await signOut();

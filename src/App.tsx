@@ -1113,21 +1113,22 @@ const AppContent = ({ currentPath, navigate }) => {
       {currentPath === '/auth/signin' && !user && <AuthForm mode="signin" navigate={navigate} />}
       {currentPath === '/auth/signup' && !user && <AuthForm mode="signup" navigate={navigate} />}
       
-      {/* Show dashboard for authenticated users */}
-      {currentPath === '/dashboard' && user && <N8nChallengeGenerator />}
-      
-      {/* Redirect unauthenticated users away from dashboard */}
-      {!user && currentPath === '/dashboard' && (
-        <div className="container mx-auto px-6 py-12 text-center">
-          <h2 className="text-2xl font-bold text-white mb-4">Authentication Required</h2>
-          <p className="text-slate-300 mb-6">Please sign in to access the dashboard.</p>
-          <button
-            onClick={() => navigate('/auth/signin')}
-            className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300"
-          >
-            Sign In
-          </button>
-        </div>
+      {/* Dashboard route */}
+      {currentPath === '/dashboard' && (
+        user ? (
+          <N8nChallengeGenerator />
+        ) : (
+          <div className="container mx-auto px-6 py-12 text-center">
+            <h2 className="text-2xl font-bold text-white mb-4">Authentication Required</h2>
+            <p className="text-slate-300 mb-6">Please sign in to access the dashboard.</p>
+            <button
+              onClick={() => navigate('/auth/signin')}
+              className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300"
+            >
+              Sign In
+            </button>
+          </div>
+        )
       )}
       
       {/* Redirect authenticated users away from auth pages */}

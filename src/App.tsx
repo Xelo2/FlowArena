@@ -556,16 +556,18 @@ const useSupabaseAuth = () => {
   // Check for existing session on mount
   useEffect(() => {
     const checkSession = async () => {
+      setLoading(true);
       try {
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error('Session check error:', error);
-          // You might want to show this error to the user
+          setLoading(false);
           return;
         }
         
         if (data.session) {
+          console.log('Session found:', data.session.user);
           setUser(data.session.user);
           
           // If this was an OAuth callback, optionally redirect to stored path
@@ -574,11 +576,18 @@ const useSupabaseAuth = () => {
             if (preAuthPath && preAuthPath !== '/' && preAuthPath !== window.location.pathname) {
               localStorage.removeItem('pre_auth_path');
               window.history.replaceState({}, document.title, preAuthPath);
+            } else {
+              // Clean up URL parameters after OAuth
+              window.history.replaceState({}, document.title, window.location.pathname);
             }
           }
+        } else {
+          console.log('No session found');
         }
       } catch (error) {
         console.error('Error checking session:', error);
+      } finally {
+        setLoading(false);
       }
     };
     
@@ -627,9 +636,9 @@ const useSupabaseAuth = () => {
       if (data.session) {
         setUser(data.session.user);
         localStorage.setItem('supabase_token', data.session.access_token);
+        console.log('Sign in successful, user set:', data.session.user);
       }
       
-      console.log('Sign in successful:', data);
       return { success: true, message: 'Signed in successfully!' };
     } catch (error) {
       console.error('Sign in error:', error);
@@ -1039,6 +1048,8 @@ const AuthForm = ({ mode, navigate }) => {
 // Main App Component
 const App = () => {
   const { user, signOut } = useSupabaseAuth();
+  
+  console.log('App component rendering with user:', user);
 
   return (
     <div className="min-h-screen bg-slate-900 relative overflow-hidden">
@@ -1087,6 +1098,7 @@ const App = () => {
 
 // App Content with Routing Logic
 const AppContent = ({ currentPath, navigate, user, signOut }) => {
+  console.log('AppContent rendering - currentPath:', currentPath, 'user:', user);
 
   const handleSignOut = async () => {
     const result = await signOut();
@@ -1117,7 +1129,15 @@ const AppContent = ({ currentPath, navigate, user, signOut }) => {
       {/* Dashboard route */}
       {currentPath === '/dashboard' && (
         user ? (
+          <div>
+            <div className="container mx-auto px-6 py-6">
+              <div className="text-center mb-6">
+                <h2 className="text-2xl font-bold text-white">Welcome to your Dashboard</h2>
+                <p className="text-slate-300">Logged in as: {user.email}</p>
+              </div>
+            </div>
           <N8nChallengeGenerator />
+          </div>
         ) : (
           <div className="container mx-auto px-6 py-12 text-center">
             <h2 className="text-2xl font-bold text-white mb-4">Authentication Required</h2>
@@ -1133,11 +1153,11 @@ const AppContent = ({ currentPath, navigate, user, signOut }) => {
       )}
       
       {/* Redirect authenticated users away from auth pages */}
-      {user && (currentPath === '/auth/signin' || currentPath === '/auth/signup') && (
+      {user && (currentPath === '/auth/signin' || currentPath === '/auth/signup') && !loading && (
         <div className="container mx-auto px-6 py-12 text-center">
           <h2 className="text-2xl font-bold text-white mb-4">Already Signed In</h2>
           <p className="text-slate-300 mb-6">You're already authenticated. Redirecting to home...</p>
-          {setTimeout(() => navigate('/'), 2000)}
+          {setTimeout(() => navigate('/'), 1000)}
           <button
             onClick={() => navigate('/')}
             className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300"

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { User, Eye, EyeOff, CheckCircle, AlertCircle, Home as HomeIcon, LogIn, UserPlus, Github } from 'lucide-react';
+import { User, Eye, EyeOff, CheckCircle, AlertCircle, Home as HomeIcon, LogIn, UserPlus, Github, Code } from 'lucide-react';
+import N8nChallengeGenerator from './pages/n8n-challenge-generator (3)';
 
 // Google Icon Component (since it's not in Lucide)
 const GoogleIcon = ({ className }) => (
@@ -57,6 +58,18 @@ const Navigation = ({ navigate, currentPath, user, onSignOut }) => {
         </div>
         
         <div className="flex items-center space-x-4">
+          <button
+            onClick={() => navigate('/')}
+            className={`flex items-center px-4 py-2 rounded-lg transition-colors duration-200 ${
+              currentPath === '/dashboard' 
+                ? 'bg-blue-500/20 text-blue-300' 
+                : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+            }`}
+          >
+            <Code className="w-4 h-4 mr-2" />
+            Dashboard
+          </button>
+          
           <button
             onClick={() => navigate('/')}
             className={`flex items-center px-4 py-2 rounded-lg transition-colors duration-200 ${
@@ -1100,6 +1113,23 @@ const AppContent = ({ currentPath, navigate }) => {
       {currentPath === '/auth/signin' && !user && <AuthForm mode="signin" navigate={navigate} />}
       {currentPath === '/auth/signup' && !user && <AuthForm mode="signup" navigate={navigate} />}
       
+      {/* Show dashboard for authenticated users */}
+      {currentPath === '/dashboard' && user && <N8nChallengeGenerator />}
+      
+      {/* Redirect unauthenticated users away from dashboard */}
+      {!user && currentPath === '/dashboard' && (
+        <div className="container mx-auto px-6 py-12 text-center">
+          <h2 className="text-2xl font-bold text-white mb-4">Authentication Required</h2>
+          <p className="text-slate-300 mb-6">Please sign in to access the dashboard.</p>
+          <button
+            onClick={() => navigate('/auth/signin')}
+            className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300"
+          >
+            Sign In
+          </button>
+        </div>
+      )}
+      
       {/* Redirect authenticated users away from auth pages */}
       {user && (currentPath === '/auth/signin' || currentPath === '/auth/signup') && (
         <div className="container mx-auto px-6 py-12 text-center">
@@ -1115,7 +1145,7 @@ const AppContent = ({ currentPath, navigate }) => {
       )}
       
       {/* 404 fallback */}
-      {!['/', '/auth/signin', '/auth/signup'].includes(currentPath) && (
+      {!['/', '/auth/signin', '/auth/signup', '/dashboard'].includes(currentPath) && (
         <div className="container mx-auto px-6 py-12 text-center">
           <h2 className="text-2xl font-bold text-white mb-4">Page Not Found</h2>
           <p className="text-slate-300 mb-6">The page you're looking for doesn't exist.</p>
